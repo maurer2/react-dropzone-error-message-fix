@@ -16,9 +16,17 @@ export const ErrorCode = {
 // File Errors
 export const getInvalidTypeRejectionErr = (accept) => {
   accept = Array.isArray(accept) && accept.length === 1 ? accept[0] : accept;
+
+  // todo find out when accept
+  const fileEndings = accept
+    .split(',')
+    .flatMap((mimeType) => mimeType.match(/[^\/]+$/)?.[0] ?? [])
+    .map((mimeType) => `.${mimeType.toLowerCase()}`);
+
   const messageSuffix = Array.isArray(accept)
     ? `one of ${accept.join(", ")}`
-    : accept;
+    : new Intl.ListFormat('en', { style: 'long', type: 'disjunction' }).format(fileEndings);
+
   return {
     code: FILE_INVALID_TYPE,
     message: `File type must be ${messageSuffix}`,
