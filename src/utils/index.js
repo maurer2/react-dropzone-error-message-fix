@@ -13,19 +13,40 @@ export const ErrorCode = {
   TooManyFiles: TOO_MANY_FILES,
 };
 
+const regexMimeType = /\w+\/[-+.\w]+/g; // L 315
+
 // File Errors
 export const getInvalidTypeRejectionErr = (accept) => {
   accept = Array.isArray(accept) && accept.length === 1 ? accept[0] : accept;
+  let messageSuffix = '';
 
-  // todo find out when accept
-  const fileEndings = accept
-    .split(',')
-    .flatMap((mimeType) => mimeType.match(/[^\/]+$/)?.[0] ?? [])
-    .map((mimeType) => `.${mimeType.toLowerCase()}`);
+  // mime type string (one or multiple, comma separated)
+  if (!Array.isArray(accept) && regexMimeType.test(accept)) {
+    const fileEndings = accept
+      .split(',')
+      .flatMap((mimeType) => mimeType.match(/[^\/]+$/)?.[0] ?? [])
+      .map((mimeType) => `.${mimeType.toLowerCase()}`);
+    const formattedList = new Intl.ListFormat("en", { style: "long", type: "disjunction" }).format(fileEndings);
 
-  const messageSuffix = Array.isArray(accept)
-    ? `one of ${accept.join(", ")}`
-    : new Intl.ListFormat('en', { style: 'long', type: 'disjunction' }).format(fileEndings);
+    messageSuffix = formattedList;
+  }
+
+  // mime type array
+  if (Array.isArray(accept) && accept.every((currentMimeType) => regexMimeType.test(currentMimeType))) {
+    const fileEndings = accept
+      .flatMap((mimeType) => mimeType.match(/[^\/]+$/)?.[0] ?? [])
+      .map((mimeType) => `.${mimeType.toLowerCase()}`);
+    const formattedList = new Intl.ListFormat("en", { style: "long", type: "disjunction" }).format(fileEndings);
+
+    messageSuffix = formattedList;
+  }
+
+  // file ending array or string
+  if ((!Array.isArray(accept) && !regexMimeType.test(accept)) || (Array.isArray(accept) && !accept.every((currentMimeType) => regexMimeType.test(currentMimeType)))) {
+    messageSuffix = Array.isArray(accept)
+      ? `one of ${accept.join(", ")}`
+      : accept
+  }
 
   return {
     code: FILE_INVALID_TYPE,
